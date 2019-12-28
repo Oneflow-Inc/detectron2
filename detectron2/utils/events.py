@@ -82,7 +82,7 @@ class JSONWriter(EventWriter):
 
     """
 
-    def __init__(self, json_file, window_size=20):
+    def __init__(self, json_file, window_size=1):
         """
         Args:
             json_file (str): path to the json file. New data will be appended if the file exists.
@@ -112,7 +112,7 @@ class TensorboardXWriter(EventWriter):
     Write all scalars to a tensorboard file.
     """
 
-    def __init__(self, log_dir: str, window_size: int = 20, **kwargs):
+    def __init__(self, log_dir: str, window_size: int = 1, **kwargs):
         """
         Args:
             log_dir (str): the directory to save the output events
@@ -161,11 +161,12 @@ class CommonMetricPrinter(EventWriter):
         storage = get_event_storage()
         iteration = storage.iter
 
-        data_time, time = None, None
+        data_time, time, time_avg = None, None, None
         eta_string = "N/A"
         try:
-            data_time = storage.history("data_time").avg(20)
-            time = storage.history("time").global_avg()
+            data_time = storage.history("data_time").avg(1)
+            time = storage.history("time").avg(1)
+            time_avg = storage.history("time").global_avg()
             eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
             storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
@@ -186,7 +187,7 @@ class CommonMetricPrinter(EventWriter):
         self.logger.info(
             """\
 eta: {eta}  iter: {iter}  {losses}  \
-{time}  {data_time}  \
+{time}  {time_avg}  {data_time}  \
 lr: {lr}  {memory}\
 """.format(
                 eta=eta_string,
@@ -199,6 +200,7 @@ lr: {lr}  {memory}\
                     ]
                 ),
                 time="time: {:.4f}".format(time) if time is not None else "",
+                time_avg="time_avg: {:.4f}".format(time_avg) if time_avg is not None else "",
                 data_time="data_time: {:.4f}".format(data_time) if data_time is not None else "",
                 lr=lr,
                 memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
@@ -308,7 +310,7 @@ class EventStorage:
         """
         return self._latest_scalars
 
-    def latest_with_smoothing_hint(self, window_size=20):
+    def latest_with_smoothing_hint(self, window_size=1):
         """
         Similar to :meth:`latest`, but the returned values
         are either the un-smoothed original latest value,
