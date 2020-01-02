@@ -280,8 +280,8 @@ class DefaultTrainer(SimpleTrainer):
         self.start_iter = (
             self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume).get(
                 "iteration", -1
-            )
-            + 1
+            ) +
+            1
         )
 
     def build_hooks(self):
@@ -328,10 +328,12 @@ class DefaultTrainer(SimpleTrainer):
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE))
+            ret.append(hooks.PeriodicWriter(self.build_writers(),
+                                            period=self.cfg.LOSS_PRINT_FREQUENCE))
             metrics = pd.DataFrame(
-                {"iter": 0, "legend": "cfg",}, index=[0])
-            ret.append(hooks.PeriodicWriter([PDWriter(metrics, self.cfg, self.cfg.OUTPUT_DIR),], period=self.cfg.CSV_PRINT_FREQUENCE))
+                {"iter": 0, "legend": "cfg", }, index=[0])
+            ret.append(hooks.PeriodicWriter(
+                [PDWriter(metrics, self.cfg, self.cfg.OUTPUT_DIR), ], period=self.cfg.CSV_PRINT_FREQUENCE))
         return ret
 
     def build_writers(self):

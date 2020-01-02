@@ -48,12 +48,12 @@ class PDWriter(EventWriter):
         storage = get_event_storage()
         iteration = storage.iter
         lr = storage.history("lr").latest()
-        
+
         losses = {}
         for k, v in storage.histories().items():
             if "loss" in k:
                 losses[k] = v.median(1)
-        
+
         time = None
         try:
             time = storage.history("time").global_avg()
@@ -61,67 +61,58 @@ class PDWriter(EventWriter):
             pass
 
         df = pd.DataFrame(
-            [{
-                "iter": iteration,
-                "legend": "elapsed_time",
-                "value": time,
-            },
-            {
-                "iter": iteration,
-                "legend": "loss_rpn_box_reg",
-                "value": losses["loss_rpn_loc"],
-            },
-            {
-                "iter": iteration,
-                "legend": "loss_objectness",
-                "value": losses["loss_rpn_cls"],
-            },
-            {
-                "iter": iteration,
-                "legend": "loss_box_reg",
-                "value": losses["loss_box_reg"],
-            },
-            {
-                "iter": iteration,
-                "legend": "loss_classifier",
-                "value": losses["loss_cls"],
-            },
-            {
-                "iter": iteration,
-                "legend": "loss_mask",
-                "value": losses["loss_mask"],
-            },
-            {
-                "iter": iteration,
-                "legend": "lr",
-                "value": lr,
-            },
-            {
-                "iter": iteration,
-                "legend": "max_mem",
-                "value": torch.cuda.max_memory_allocated()
-                / 1024.0
-                / 1024.0,
-            },
-            {"iter": iteration, "legend": "loader_time", "value": 0.0},
-            ])
+            [
+                {"iter": iteration, "legend": "elapsed_time", "value": time, },
+                {
+                    "iter": iteration,
+                    "legend": "loss_rpn_box_reg",
+                    "value": losses["loss_rpn_loc"],
+                },
+                {
+                    "iter": iteration,
+                    "legend": "loss_objectness",
+                    "value": losses["loss_rpn_cls"],
+                },
+                {
+                    "iter": iteration,
+                    "legend": "loss_box_reg",
+                    "value": losses["loss_box_reg"],
+                },
+                {
+                    "iter": iteration,
+                    "legend": "loss_classifier",
+                    "value": losses["loss_cls"],
+                },
+                {
+                    "iter": iteration,
+                    "legend": "loss_mask",
+                    "value": losses["loss_mask"],
+                },
+                {"iter": iteration, "legend": "lr", "value": lr, },
+                {
+                    "iter": iteration,
+                    "legend": "max_mem",
+                    "value": torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
+                },
+                {"iter": iteration, "legend": "loader_time", "value": 0.0},
+            ]
+        )
         self.pd_frame = pd.concat([self.pd_frame, df], axis=0, sort=False)
 
-        
         npy_file_name = "torch-{}-batch_size-{}-image_dir-{}-{}.csv".format(
-                    iteration,
-                    self.cfg.SOLVER.IMS_PER_BATCH,
-                    self.cfg.DATASETS.TRAIN[0],
-                    str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
-                )
-        log_dir = os.path.join(self.log_path, "csv_outpt_bz_{}".format(self.cfg.SOLVER.IMS_PER_BATCH)) 
+            iteration,
+            self.cfg.SOLVER.IMS_PER_BATCH,
+            self.cfg.DATASETS.TRAIN[0],
+            str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
+        )
+        log_dir = os.path.join(
+            self.log_path, "csv_outpt_bz_{}".format(self.cfg.SOLVER.IMS_PER_BATCH)
+        )
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         npy_file_name = os.path.join(log_dir, npy_file_name)
         self.pd_frame.to_csv(npy_file_name, index=False)
         print("saved: {}".format(npy_file_name))
-
-
 
 
 class JSONWriter(EventWriter):
@@ -254,7 +245,9 @@ class CommonMetricPrinter(EventWriter):
         try:
             data_time = storage.history("data_time").avg(1)
             time = storage.history("time").global_avg()
-            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
+            eta_seconds = storage.history("time").median(1000) * (
+                self._max_iter - iteration
+            )
             storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
         except KeyError:  # they may not exist in the first few iterations (due to warmup)
@@ -287,9 +280,13 @@ lr: {lr}  {memory}\
                     ]
                 ),
                 time="time: {:.4f}".format(time) if time is not None else "",
-                data_time="data_time: {:.4f}".format(data_time) if data_time is not None else "",
+                data_time="data_time: {:.4f}".format(data_time)
+                if data_time is not None
+                else "",
                 lr=lr,
-                memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
+                memory="max_mem: {:.0f}M".format(max_mem_mb)
+                if max_mem_mb is not None
+                else "",
             )
         )
 
@@ -407,7 +404,9 @@ class EventStorage:
         """
         result = {}
         for k, v in self._latest_scalars.items():
-            result[k] = self._history[k].median(window_size) if self._smoothing_hints[k] else v
+            result[k] = (
+                self._history[k].median(window_size) if self._smoothing_hints[k] else v
+            )
         return result
 
     def smoothing_hints(self):
