@@ -17,6 +17,7 @@ import torch
 from fvcore.common.file_io import PathManager
 from fvcore.nn.precise_bn import get_bn_modules
 from torch.nn.parallel import DistributedDataParallel
+import pandas as pd
 
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
@@ -36,7 +37,7 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter, PDWriter
 from detectron2.utils.logger import setup_logger
 
 from . import hooks
@@ -327,7 +328,10 @@ class DefaultTrainer(SimpleTrainer):
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers(), period=1))
+            ret.append(hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE))
+            metrics = pd.DataFrame(
+                {"iter": 0, "legend": "cfg",}, index=[0])
+            ret.append(hooks.PeriodicWriter([PDWriter(metrics, self.cfg, self.cfg.OUTPUT_DIR),], period=self.cfg.CSV_PRINT_FREQUENCE))
         return ret
 
     def build_writers(self):

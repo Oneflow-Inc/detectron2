@@ -36,6 +36,7 @@ from detectron2.evaluation import (
     verify_results,
 )
 from detectron2.modeling import GeneralizedRCNNWithTTA
+from detectron2.utils.events import CommonMetricPrinter, PDWriter
 
 
 class Trainer(DefaultTrainer):
@@ -146,6 +147,8 @@ def main(args):
         trainer.register_hooks(
             [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
         )
+    if False:
+        trainer.register_hooks([hooks.PeriodicWriter([PDWriter("120")])])
     return trainer.train()
 
 
