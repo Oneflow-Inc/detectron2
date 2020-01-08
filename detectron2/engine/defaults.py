@@ -17,7 +17,6 @@ import torch
 from fvcore.common.file_io import PathManager
 from fvcore.nn.precise_bn import get_bn_modules
 from torch.nn.parallel import DistributedDataParallel
-import pandas as pd
 
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
@@ -39,6 +38,8 @@ from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
 from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter, PDWriter
 from detectron2.utils.logger import setup_logger
+
+import pandas as pd
 
 from . import hooks
 from .train_loop import SimpleTrainer

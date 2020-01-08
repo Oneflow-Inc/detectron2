@@ -7,7 +7,6 @@ import time
 import weakref
 import torch
 
-
 import detectron2.utils.comm as comm
 from detectron2.utils.events import EventStorage
 
