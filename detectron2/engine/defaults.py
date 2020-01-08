@@ -36,7 +36,7 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import CommonMetricPrinter, JSONWriter, PDWriter, TensorboardXWriter
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, TensorboardXWriter, PDWriter
 from detectron2.utils.logger import setup_logger
 
 import pandas as pd
