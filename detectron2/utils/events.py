@@ -38,10 +38,11 @@ class EventWriter:
 
 
 class PDWriter(EventWriter):
-    def __init__(self, pd_frame, cfg, log_path=""):
+    def __init__(self, pd_frame, cfg, log_frequency, log_path=""):
         self.logger = logging.getLogger(__name__)
         self.pd_frame = pd_frame
         self.cfg = cfg
+        self.log_frequency = log_frequency
         self.log_path = log_path
 
     def write(self):
@@ -54,15 +55,15 @@ class PDWriter(EventWriter):
             if "loss" in k:
                 losses[k] = v.median(1)
 
-        time = None
+        time = 0.0
         try:
-            time = storage.history("time").global_avg()
+            time = storage.history("time").avg(1)
         except KeyError:  # they may not exist in the first few iterations (due to warmup)
             pass
 
         df = pd.DataFrame(
             [
-                {"iter": iteration, "legend": "elapsed_time", "value": time, },
+                {"iter": iteration, "legend": "elapsed_time", "value": time,},
                 {
                     "iter": iteration,
                     "legend": "loss_rpn_box_reg",
@@ -88,7 +89,7 @@ class PDWriter(EventWriter):
                     "legend": "loss_mask",
                     "value": losses["loss_mask"],
                 },
-                {"iter": iteration, "legend": "lr", "value": lr, },
+                {"iter": iteration, "legend": "lr", "value": lr,},
                 {
                     "iter": iteration,
                     "legend": "max_mem",
@@ -99,20 +100,21 @@ class PDWriter(EventWriter):
         )
         self.pd_frame = pd.concat([self.pd_frame, df], axis=0, sort=False)
 
-        npy_file_name = "torch-{}-batch_size-{}-image_dir-{}-{}.csv".format(
-            iteration,
-            self.cfg.SOLVER.IMS_PER_BATCH,
-            self.cfg.DATASETS.TRAIN[0],
-            str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
-        )
-        log_dir = os.path.join(
-            self.log_path, "csv_outpt_bz_{}".format(self.cfg.SOLVER.IMS_PER_BATCH)
-        )
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-        npy_file_name = os.path.join(log_dir, npy_file_name)
-        self.pd_frame.to_csv(npy_file_name, index=False)
-        print("saved: {}".format(npy_file_name))
+        if iteration % self.log_frequency == 0:
+            npy_file_name = "torch-{}-batch_size-{}-image_dir-{}-{}.csv".format(
+                iteration,
+                self.cfg.SOLVER.IMS_PER_BATCH,
+                self.cfg.DATASETS.TRAIN[0],
+                str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
+            )
+            log_dir = os.path.join(
+                self.log_path, "csv_outpt_bz_{}".format(self.cfg.SOLVER.IMS_PER_BATCH)
+            )
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            npy_file_name = os.path.join(log_dir, npy_file_name)
+            self.pd_frame.to_csv(npy_file_name, index=False)
+            print("saved: {}".format(npy_file_name))
 
 
 class JSONWriter(EventWriter):
