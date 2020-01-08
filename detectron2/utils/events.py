@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import torch
 from fvcore.common.file_io import PathManager
 from fvcore.common.history_buffer import HistoryBuffer
+
 import pandas as pd
 
 _CURRENT_STORAGE_STACK = []
@@ -63,33 +64,13 @@ class PDWriter(EventWriter):
 
         df = pd.DataFrame(
             [
-                {"iter": iteration, "legend": "elapsed_time", "value": time,},
-                {
-                    "iter": iteration,
-                    "legend": "loss_rpn_box_reg",
-                    "value": losses["loss_rpn_loc"],
-                },
-                {
-                    "iter": iteration,
-                    "legend": "loss_objectness",
-                    "value": losses["loss_rpn_cls"],
-                },
-                {
-                    "iter": iteration,
-                    "legend": "loss_box_reg",
-                    "value": losses["loss_box_reg"],
-                },
-                {
-                    "iter": iteration,
-                    "legend": "loss_classifier",
-                    "value": losses["loss_cls"],
-                },
-                {
-                    "iter": iteration,
-                    "legend": "loss_mask",
-                    "value": losses["loss_mask"],
-                },
-                {"iter": iteration, "legend": "lr", "value": lr,},
+                {"iter": iteration, "legend": "elapsed_time", "value": time},
+                {"iter": iteration, "legend": "loss_rpn_box_reg", "value": losses["loss_rpn_loc"]},
+                {"iter": iteration, "legend": "loss_objectness", "value": losses["loss_rpn_cls"]},
+                {"iter": iteration, "legend": "loss_box_reg", "value": losses["loss_box_reg"]},
+                {"iter": iteration, "legend": "loss_classifier", "value": losses["loss_cls"]},
+                {"iter": iteration, "legend": "loss_mask", "value": losses["loss_mask"]},
+                {"iter": iteration, "legend": "lr", "value": lr},
                 {
                     "iter": iteration,
                     "legend": "max_mem",
@@ -247,9 +228,7 @@ class CommonMetricPrinter(EventWriter):
         try:
             data_time = storage.history("data_time").avg(1)
             time = storage.history("time").global_avg()
-            eta_seconds = storage.history("time").median(1000) * (
-                self._max_iter - iteration
-            )
+            eta_seconds = storage.history("time").median(1000) * (self._max_iter - iteration)
             storage.put_scalar("eta_seconds", eta_seconds, smoothing_hint=False)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
         except KeyError:  # they may not exist in the first few iterations (due to warmup)
@@ -282,13 +261,9 @@ lr: {lr}  {memory}\
                     ]
                 ),
                 time="time: {:.4f}".format(time) if time is not None else "",
-                data_time="data_time: {:.4f}".format(data_time)
-                if data_time is not None
-                else "",
+                data_time="data_time: {:.4f}".format(data_time) if data_time is not None else "",
                 lr=lr,
-                memory="max_mem: {:.0f}M".format(max_mem_mb)
-                if max_mem_mb is not None
-                else "",
+                memory="max_mem: {:.0f}M".format(max_mem_mb) if max_mem_mb is not None else "",
             )
         )
 
@@ -406,9 +381,7 @@ class EventStorage:
         """
         result = {}
         for k, v in self._latest_scalars.items():
-            result[k] = (
-                self._history[k].median(window_size) if self._smoothing_hints[k] else v
-            )
+            result[k] = self._history[k].median(window_size) if self._smoothing_hints[k] else v
         return result
 
     def smoothing_hints(self):

@@ -17,7 +17,6 @@ import torch
 from fvcore.common.file_io import PathManager
 from fvcore.nn.precise_bn import get_bn_modules
 from torch.nn.parallel import DistributedDataParallel
-import pandas as pd
 
 import detectron2.data.transforms as T
 from detectron2.checkpoint import DetectionCheckpointer
@@ -37,23 +36,15 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils import comm
 from detectron2.utils.collect_env import collect_env_info
 from detectron2.utils.env import seed_all_rng
-from detectron2.utils.events import (
-    CommonMetricPrinter,
-    JSONWriter,
-    TensorboardXWriter,
-    PDWriter,
-)
+from detectron2.utils.events import CommonMetricPrinter, JSONWriter, PDWriter, TensorboardXWriter
 from detectron2.utils.logger import setup_logger
+
+import pandas as pd
 
 from . import hooks
 from .train_loop import SimpleTrainer
 
-__all__ = [
-    "default_argument_parser",
-    "default_setup",
-    "DefaultPredictor",
-    "DefaultTrainer",
-]
+__all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
 
 
 def default_argument_parser():
@@ -64,26 +55,17 @@ def default_argument_parser():
         argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(description="Detectron2 Training")
-    parser.add_argument(
-        "--config-file", default="", metavar="FILE", help="path to config file"
-    )
+    parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument(
         "--resume",
         action="store_true",
         help="whether to attempt to resume from the checkpoint directory",
     )
-    parser.add_argument(
-        "--eval-only", action="store_true", help="perform evaluation only"
-    )
-    parser.add_argument(
-        "--num-gpus", type=int, default=1, help="number of gpus *per machine*"
-    )
+    parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
+    parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
     parser.add_argument("--num-machines", type=int, default=1)
     parser.add_argument(
-        "--machine-rank",
-        type=int,
-        default=0,
-        help="the rank of this machine (unique per machine)",
+        "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
     )
 
     # PyTorch still may leave orphan processes in multi-gpu training.
@@ -120,11 +102,7 @@ def default_setup(cfg, args):
     setup_logger(output_dir, distributed_rank=rank, name="fvcore")
     logger = setup_logger(output_dir, distributed_rank=rank)
 
-    logger.info(
-        "Rank of current process: {}. World size: {}".format(
-            rank, comm.get_world_size()
-        )
-    )
+    logger.info("Rank of current process: {}. World size: {}".format(rank, comm.get_world_size()))
     logger.info("Environment info:\n" + collect_env_info())
 
     logger.info("Command line arguments: " + str(args))
@@ -206,9 +184,7 @@ class DefaultPredictor:
                 # whether the model expects BGR inputs or RGB
                 original_image = original_image[:, :, ::-1]
             height, width = original_image.shape[:2]
-            image = self.transform_gen.get_transform(original_image).apply_image(
-                original_image
-            )
+            image = self.transform_gen.get_transform(original_image).apply_image(original_image)
             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
 
             inputs = {"image": image, "height": height, "width": width}
@@ -341,11 +317,7 @@ class DefaultTrainer(SimpleTrainer):
         # This is not always the best: if checkpointing has a different frequency,
         # some checkpoints may have more precise statistics than others.
         if comm.is_main_process():
-            ret.append(
-                hooks.PeriodicCheckpointer(
-                    self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD
-                )
-            )
+            ret.append(hooks.PeriodicCheckpointer(self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
 
         def test_and_save_results():
             self._last_eval_results = self.test(self.cfg, self.model)
@@ -358,19 +330,14 @@ class DefaultTrainer(SimpleTrainer):
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
             ret.append(
-                hooks.PeriodicWriter(
-                    self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE
-                )
+                hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE)
             )
-            metrics = pd.DataFrame({"iter": 0, "legend": "cfg",}, index=[0])
+            metrics = pd.DataFrame({"iter": 0, "legend": "cfg"}, index=[0])
             ret.append(
                 hooks.PeriodicWriter(
                     [
                         PDWriter(
-                            metrics,
-                            self.cfg,
-                            self.cfg.CSV_PRINT_FREQUENCE,
-                            self.cfg.OUTPUT_DIR,
+                            metrics, self.cfg, self.cfg.CSV_PRINT_FREQUENCE, self.cfg.OUTPUT_DIR
                         )
                     ],
                     period=1,
@@ -534,9 +501,7 @@ class DefaultTrainer(SimpleTrainer):
                 ), "Evaluator must return a dict on the main process. Got {} instead.".format(
                     results_i
                 )
-                logger.info(
-                    "Evaluation results for {} in csv format:".format(dataset_name)
-                )
+                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
                 print_csv_format(results_i)
 
         if len(results) == 1:
