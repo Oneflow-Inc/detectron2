@@ -556,6 +556,7 @@ class StandardROIHeads(ROIHeads):
         """
         del images
         if self.training:
+            torch.cuda.nvtx.range_push("box_head")
             proposals = self.label_and_sample_proposals(proposals, targets)
         del targets
 
@@ -563,9 +564,12 @@ class StandardROIHeads(ROIHeads):
 
         if self.training:
             losses = self._forward_box(features_list, proposals)
+            torch.cuda.nvtx.range_pop()
             # During training the proposals used by the box head are
             # used by the mask, keypoint (and densepose) heads.
+            torch.cuda.nvtx.range_push("mask_head")
             losses.update(self._forward_mask(features_list, proposals))
+            torch.cuda.nvtx.range_pop()
             losses.update(self._forward_keypoint(features_list, proposals))
             return proposals, losses
         else:

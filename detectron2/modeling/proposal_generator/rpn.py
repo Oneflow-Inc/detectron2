@@ -139,7 +139,10 @@ class RPN(nn.Module):
         gt_boxes = [x.gt_boxes for x in gt_instances] if gt_instances is not None else None
         del gt_instances
         features = [features[f] for f in self.in_features]
+        torch.cuda.nvtx.range_push("rpn_head")
         pred_objectness_logits, pred_anchor_deltas = self.rpn_head(features)
+        torch.cuda.nvtx.range_pop()
+        torch.cuda.nvtx.range_push("rpn_loss")
         anchors = self.anchor_generator(features)
         # TODO: The anchors only depend on the feature map shape; there's probably
         # an opportunity for some optimizations (e.g., caching anchors).
@@ -161,7 +164,9 @@ class RPN(nn.Module):
             losses = {k: v * self.loss_weight for k, v in outputs.losses().items()}
         else:
             losses = {}
+        torch.cuda.nvtx.range_pop()
 
+        torch.cuda.nvtx.range_push("rpn_post_processor")
         with torch.no_grad():
             # Find the top proposals by applying NMS and removing boxes that
             # are too small. The proposals are treated as fixed for approximate
@@ -184,5 +189,6 @@ class RPN(nn.Module):
             # and this sorting is actually not needed. But the cost is negligible.
             inds = [p.objectness_logits.sort(descending=True)[1] for p in proposals]
             proposals = [p[ind] for p, ind in zip(proposals, inds)]
+        torch.cuda.nvtx.range_pop()
 
         return proposals, losses

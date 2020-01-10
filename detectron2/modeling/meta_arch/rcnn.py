@@ -119,7 +119,9 @@ class GeneralizedRCNN(nn.Module):
         else:
             gt_instances = None
 
+        torch.cuda.nvtx.range_push("backbone")
         features = self.backbone(images.tensor)
+        torch.cuda.nvtx.range_pop()
 
         if self.proposal_generator:
             proposals, proposal_losses = self.proposal_generator(images, features, gt_instances)
