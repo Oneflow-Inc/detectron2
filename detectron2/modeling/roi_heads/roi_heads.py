@@ -21,6 +21,8 @@ from .fast_rcnn import FastRCNNOutputLayers, FastRCNNOutputs
 from .keypoint_head import build_keypoint_head, keypoint_rcnn_inference, keypoint_rcnn_loss
 from .mask_head import build_mask_head, mask_rcnn_inference, mask_rcnn_loss
 
+import detectron2.nvtx_util as nvtx
+
 ROI_HEADS_REGISTRY = Registry("ROI_HEADS")
 ROI_HEADS_REGISTRY.__doc__ = """
 Registry for ROI heads in a generalized R-CNN model.
@@ -563,12 +565,16 @@ class StandardROIHeads(ROIHeads):
         features_list = [features[f] for f in self.in_features]
 
         if self.training:
+            # features_list[0].register_hook(nvtx.range_pop_handler())
             losses = self._forward_box(features_list, proposals)
+            # losses["loss_box_reg"].register_hook(nvtx.range_push_handler("box_head_backward"))
             torch.cuda.nvtx.range_pop()
             # During training the proposals used by the box head are
             # used by the mask, keypoint (and densepose) heads.
             torch.cuda.nvtx.range_push("mask_head")
+            # features_list[0].register_hook(nvtx.range_pop_handler())
             losses.update(self._forward_mask(features_list, proposals))
+            # losses["loss_mask"].register_hook(nvtx.range_push_handler("mask_head_backward"))
             torch.cuda.nvtx.range_pop()
             losses.update(self._forward_keypoint(features_list, proposals))
             return proposals, losses

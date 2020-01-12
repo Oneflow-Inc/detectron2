@@ -13,6 +13,8 @@ from ..matcher import Matcher
 from .build import PROPOSAL_GENERATOR_REGISTRY
 from .rpn_outputs import RPNOutputs, find_top_rpn_proposals
 
+import detectron2.nvtx_util as nvtx
+
 RPN_HEAD_REGISTRY = Registry("RPN_HEAD")
 """
 Registry for RPN heads, which take feature maps and perform
@@ -75,8 +77,10 @@ class StandardRPNHead(nn.Module):
         """
         pred_objectness_logits = []
         pred_anchor_deltas = []
-        for x in features:
+        for layer_idx, x in enumerate(features):
             t = F.relu(self.conv(x))
+            if layer_idx == 0:
+                t.register_hook(nvtx.range_pop_handler())
             pred_objectness_logits.append(self.objectness_logits(t))
             pred_anchor_deltas.append(self.anchor_deltas(t))
         return pred_objectness_logits, pred_anchor_deltas
@@ -165,6 +169,7 @@ class RPN(nn.Module):
         else:
             losses = {}
         torch.cuda.nvtx.range_pop()
+        losses["loss_rpn_loc"].register_hook(nvtx.range_push_handler("rpn_backward"))
 
         torch.cuda.nvtx.range_push("rpn_post_processor")
         with torch.no_grad():

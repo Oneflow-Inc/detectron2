@@ -10,6 +10,8 @@ from .backbone import Backbone
 from .build import BACKBONE_REGISTRY
 from .resnet import build_resnet_backbone
 
+import detectron2.nvtx_util as nvtx
+
 __all__ = ["build_resnet_fpn_backbone", "build_retinanet_resnet_fpn_backbone", "FPN"]
 
 
@@ -140,6 +142,7 @@ class FPN(Backbone):
                 top_block_in_feature = results[self._out_features.index(self.top_block.in_feature)]
             results.extend(self.top_block(top_block_in_feature))
         assert len(self._out_features) == len(results)
+        # results[-2].register_hook(nvtx.range_push_handler("backbone_backward"))
         return dict(zip(self._out_features, results))
 
     def output_shape(self):

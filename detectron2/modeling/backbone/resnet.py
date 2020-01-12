@@ -5,6 +5,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+import detectron2.nvtx_util as nvtx
+
 from detectron2.layers import (
     Conv2d,
     DeformConv,
@@ -381,7 +383,11 @@ class ResNet(Backbone):
         x = self.stem(x)
         if "stem" in self._out_features:
             outputs["stem"] = x
-        for stage, name in self.stages_and_names:
+
+        for stage_idx, (stage, name) in enumerate(self.stages_and_names, 1):
+            # Should use FREEZE_AT in conf instead hardcoding 2 here
+            # if stage_idx >= 3:
+            #     x.register_hook(nvtx.range_pop_handler())
             x = stage(x)
             if name in self._out_features:
                 outputs[name] = x
