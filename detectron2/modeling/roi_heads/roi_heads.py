@@ -565,16 +565,14 @@ class StandardROIHeads(ROIHeads):
         features_list = [features[f] for f in self.in_features]
 
         if self.training:
-            # features_list[0].register_hook(nvtx.range_pop_handler())
             losses = self._forward_box(features_list, proposals)
-            # losses["loss_box_reg"].register_hook(nvtx.range_push_handler("box_head_backward"))
+            losses["loss_box_reg"].register_hook(nvtx.range_push_handler("box_head_backward"))
             torch.cuda.nvtx.range_pop()
             # During training the proposals used by the box head are
             # used by the mask, keypoint (and densepose) heads.
             torch.cuda.nvtx.range_push("mask_head")
-            # features_list[0].register_hook(nvtx.range_pop_handler())
             losses.update(self._forward_mask(features_list, proposals))
-            # losses["loss_mask"].register_hook(nvtx.range_push_handler("mask_head_backward"))
+            losses["loss_mask"].register_hook(nvtx.range_push_handler("mask_head_backward"))
             torch.cuda.nvtx.range_pop()
             losses.update(self._forward_keypoint(features_list, proposals))
             return proposals, losses
@@ -627,6 +625,7 @@ class StandardROIHeads(ROIHeads):
             In inference, a list of `Instances`, the predicted instances.
         """
         box_features = self.box_pooler(features, [x.proposal_boxes for x in proposals])
+        box_features.register_hook(nvtx.range_pop_handler())
         box_features = self.box_head(box_features)
         pred_class_logits, pred_proposal_deltas = self.box_predictor(box_features)
         del box_features
@@ -668,6 +667,7 @@ class StandardROIHeads(ROIHeads):
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
             proposal_boxes = [x.proposal_boxes for x in proposals]
             mask_features = self.mask_pooler(features, proposal_boxes)
+            mask_features.register_hook(nvtx.range_pop_handler())
             mask_logits = self.mask_head(mask_features)
             return {"loss_mask": mask_rcnn_loss(mask_logits, proposals)}
         else:
