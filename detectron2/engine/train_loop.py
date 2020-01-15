@@ -147,7 +147,7 @@ class TrainerBase:
             h.before_step()
 
     def after_step(self):
-        for h in self._hooks:
+        for h in self._hooks[::-1]:
             h.after_step()
         # this guarantees, that in each hook's after_step, storage.iter == trainer.iter
         self.storage.step()
