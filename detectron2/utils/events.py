@@ -77,24 +77,22 @@ class PDWriter(EventWriter):
             ]
         )
         other_metrics = [
-            pd.DataFrame(
-                [
-                    {"iter": iteration, "legend": k, "value": v.median(1)},
-                ]
-            ) for k, v in storage.histories().items() if "loss" not in k
+            pd.DataFrame([{"iter": iteration, "legend": k, "value": v.median(1)}])
+            for k, v in storage.histories().items()
+            if "loss" not in k
         ]
         self.pd_frame = pd.concat([self.pd_frame, df] + other_metrics, axis=0, sort=False)
 
-        if (iteration + 1) % self.log_frequency == 0 or iteration == (self.cfg["SOLVER"]["MAX_ITER"] - 1):
+        if (iteration + 1) % self.log_frequency == 0 or iteration == (
+            self.cfg["SOLVER"]["MAX_ITER"] - 1
+        ):
             npy_file_name = "torch-d2-{}-batch_size-{}-image_dir-{}-{}.csv".format(
                 iteration,
                 self.cfg.SOLVER.IMS_PER_BATCH,
                 self.cfg.DATASETS.TRAIN[0],
                 str(datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S")),
             )
-            log_dir = os.path.join(
-                self.log_path, "csv".format(self.cfg.SOLVER.IMS_PER_BATCH)
-            )
+            log_dir = os.path.join(self.log_path, "csv".format(self.cfg.SOLVER.IMS_PER_BATCH))
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir)
             npy_file_name = os.path.join(log_dir, npy_file_name)

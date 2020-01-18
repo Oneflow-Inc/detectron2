@@ -333,7 +333,9 @@ class DefaultTrainer(SimpleTrainer):
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
             ret.append(
-                hooks.PeriodicWriter(self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE, name="loss writer"),
+                hooks.PeriodicWriter(
+                    self.build_writers(), period=self.cfg.LOSS_PRINT_FREQUENCE, name="loss writer"
+                )
             )
             metrics = pd.DataFrame({"iter": 0, "legend": "cfg", "note": str(cfg)}, index=[0])
             ret.append(
@@ -344,7 +346,7 @@ class DefaultTrainer(SimpleTrainer):
                         )
                     ],
                     period=1,
-                    name="csv writer"
+                    name="csv writer",
                 )
             )
         return ret

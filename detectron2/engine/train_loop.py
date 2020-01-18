@@ -80,6 +80,7 @@ class HookBase:
         else:
             return "untitled"
 
+
 class TrainerBase:
     """
     Base class for iterative trainer with hooks.
@@ -157,7 +158,7 @@ class TrainerBase:
                         "time": hook_time,
                         "type": str(type(h)),
                         "id": id(h),
-                        "name": h.name
+                        "name": h.name,
                     },
                     index=[0],
                 ),
@@ -309,8 +310,7 @@ class SimpleTrainer(TrainerBase):
 
             # average the rest metrics
             metrics_dict = {
-                k: np.mean([x[k] for x in all_metrics_dict])
-                for k in all_metrics_dict[0].keys()
+                k: np.mean([x[k] for x in all_metrics_dict]) for k in all_metrics_dict[0].keys()
             }
             total_losses_reduced = sum(loss for loss in metrics_dict.values())
 
