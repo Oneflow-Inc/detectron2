@@ -73,15 +73,17 @@ class PDWriter(EventWriter):
                 {"iter": iteration, "legend": "loss_classifier", "value": losses["loss_cls"]},
                 {"iter": iteration, "legend": "loss_mask", "value": losses["loss_mask"]},
                 {"iter": iteration, "legend": "lr", "value": lr},
-                {
-                    "iter": iteration,
-                    "legend": "max_mem",
-                    "value": torch.cuda.max_memory_allocated() / 1024.0 / 1024.0,
-                },
                 {"iter": iteration, "legend": "loader_time", "value": data_time},
             ]
         )
-        self.pd_frame = pd.concat([self.pd_frame, df], axis=0, sort=False)
+        other_metrics = [
+            pd.DataFrame(
+                [
+                    {"iter": iteration, "legend": k, "value": v.median(1)},
+                ]
+            ) for k, v in storage.histories().items() if "loss" not in k
+        ]
+        self.pd_frame = pd.concat([self.pd_frame, df] + other_metrics, axis=0, sort=False)
 
         if (iteration + 1) % self.log_frequency == 0 or iteration == (self.cfg["SOLVER"]["MAX_ITER"] - 1):
             npy_file_name = "torch-d2-{}-batch_size-{}-image_dir-{}-{}.csv".format(

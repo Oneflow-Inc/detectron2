@@ -184,6 +184,7 @@ class FastRCNNOutputs(object):
 
         storage = get_event_storage()
         storage.put_scalar("fast_rcnn/cls_accuracy", num_accurate / num_instances)
+        storage.put_scalar("total_pos_inds_elem_cnt", num_fg)
         if num_fg > 0:
             storage.put_scalar("fast_rcnn/fg_cls_accuracy", fg_num_accurate / num_fg)
             storage.put_scalar("fast_rcnn/false_negative", num_false_negative / num_fg)
