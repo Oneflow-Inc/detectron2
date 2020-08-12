@@ -576,3 +576,9 @@ _C.VIS_PERIOD = 0
 # Do not commit any configs into it.
 _C.GLOBAL = CN()
 _C.GLOBAL.HACK = 1.0
+
+
+# Options add by oneflow
+_C.LOSS_PRINT_FREQUENCE = 1
+_C.CSV_PRINT_FREQUENCE = 100
+_C.TIME_HOOKS = False
